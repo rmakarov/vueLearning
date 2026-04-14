@@ -29,14 +29,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const text = ref('');
-const sending = ref(false);
-const messages = ref([]);
-let pollInterval = null;
+interface KafkaMessage {
+  id: number;
+  text: string;
+  receivedAt: string;
+  time?: string;
+  [key: string]: unknown;
+}
+
+const text = ref<string>('');
+const sending = ref<boolean>(false);
+const messages = ref<KafkaMessage[]>([]); // ✅ Явный тип массива!
+let pollInterval: ReturnType<typeof setInterval> | null = null; // ✅ Явный тип для интервала
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const send = async () => {
+const send = async (): Promise<void> => {
   if (!text.value.trim()) return;
   sending.value = true;
   try {
@@ -47,16 +55,17 @@ const send = async () => {
     });
     text.value = '';
   } catch (err) {
+    console.error('Send error:', err);
     alert('Ошибка отправки. Проверьте консоль backend.');
   } finally {
     sending.value = false;
   }
 };
 
-const fetchMessages = async () => {
+const fetchMessages = async (): Promise<void> => {
   const res = await fetch(`${API_BASE}/api/messages`);
-  const data = await res.json();
-  messages.value = data.map(m => ({
+  const data: KafkaMessage[] = await res.json(); // ✅ Типизируем ответ
+  messages.value = data.map((m: KafkaMessage) => ({
     ...m,
     time: new Date(m.receivedAt).toLocaleTimeString()
   }));
@@ -67,7 +76,9 @@ onMounted(() => {
   pollInterval = setInterval(fetchMessages, 2000);
 });
 
-onUnmounted(() => clearInterval(pollInterval));
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
+});
 </script>
 
 <style scoped>
