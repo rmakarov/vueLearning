@@ -1,0 +1,14 @@
+{
+      "name": "kafka-vue-backend",
+      "version": "1.0.0",
+      "private": true,
+      "scripts": {
+            "start": "node server.cjs",
+            "dev": "node server.cjs"
+      },
+      "dependencies": {
+            "express": "^4.18.2",
+            "cors": "^2.8.5",
+            "kafkajs": "^2.2.4"
+      }
+}

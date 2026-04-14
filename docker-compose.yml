@@ -1,0 +1,87 @@
+services:
+  # 🔹 Kafka (брокер сообщений)
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
+    # ✅ Надёжный healthcheck для KRaft-режима
+    healthcheck:
+      test: >
+        /bin/sh -c " timeout 5 /opt/kafka/bin/kafka-broker-api-versions.sh  --bootstrap-server localhost:9092 > /dev/null 2>&1 "
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    volumes:
+      - kafka-data:/var/lib/kafka/data # ← Обратите внимание на двоеточие!
+
+  # 🔹 Backend (сборка из папки ./backend)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "3000:3000"
+    environment:
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - NODE_ENV=${NODE_ENV}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # 🔹 Analytics (тот же образ, другая команда запуска)
+  analytics:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: analytics
+    environment:
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - NODE_ENV=${NODE_ENV}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: [ "node", "analytics-consumer.cjs" ]
+    restart: unless-stopped
+
+  # 🔹 Frontend (сборка из корня)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/backend
+    restart: unless-stopped
+
+volumes:
+  kafka-data:

@@ -10,6 +10,14 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  server: {
+    host: '0.0.0.0',  // ← важно для Docker
+    port: 5173,
+    strictPort: true,
+    watch: {
+      usePolling: true  // ← полезно на Windows + Docker
+    }
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
