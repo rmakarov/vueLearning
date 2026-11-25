@@ -7,6 +7,7 @@
 			<RouterLink to="/">Home</RouterLink>
 			<RouterLink to="/map">Map</RouterLink>
 			<RouterLink to="/three-view">Three View</RouterLink>
+			<RouterLink to="/charts">Charts</RouterLink>
 		</nav>
 	</header>
 

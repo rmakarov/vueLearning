@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "chart.js": "^4.6.2",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "kafkajs": "^2.2.4",
